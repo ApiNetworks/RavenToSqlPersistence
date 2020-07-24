@@ -13,10 +13,16 @@ using RavenToSqlPersistence.Utility;
 using NServiceBus.Persistence.Sql.ScriptBuilder;
 using NServiceBus.Sagas;
 using Raven.Json.Linq;
+using NLog;
 
 static class SagaConverter
 {
     private static readonly Version PersistenceVersion;
+
+    private static Logger log = LogManager.GetCurrentClassLogger();
+
+
+
 
     static SagaConverter()
     {
@@ -40,6 +46,9 @@ static class SagaConverter
 
     private static async Task ConvertSagaType(DocumentStore docStore, SagaConversion conversion)
     {
+        log.Info("");
+        log.Info("");
+
         foreach (var sagaDocument in docStore.AllDocumentsStartingWith(conversion.DocumentPrefix, 1024))
         {
             var data = sagaDocument.DataAsJson;
@@ -71,7 +80,10 @@ static class SagaConverter
                     AddParameter(cmd, "CorrelationId", correlationValue);
                     await cmd.ExecuteNonQueryAsync();
                 }
-                
+
+                string output = $"DocPrefix:{conversion.DocumentPrefix} Id: {sagaId} CorrelationId:{correlationValue}";
+                log.Info(output);
+                Console.WriteLine(output);
             }
         }
     }
@@ -83,4 +95,5 @@ static class SagaConverter
         parameter.Value = value;
         command.Parameters.Add(parameter);
     }
+
 }

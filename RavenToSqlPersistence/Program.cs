@@ -1,8 +1,7 @@
-﻿using System;
+﻿using NLog;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
-using NServiceBus.Logging;
-
 
 namespace RavenToSqlPersistence
 {
@@ -10,7 +9,9 @@ namespace RavenToSqlPersistence
     {
         static void Main(string[] args)
         {
-            LogManager.Use<DefaultFactory>().Level(LogLevel.Warn);
+            InitNLog();
+
+            NServiceBus.Logging.LogManager.Use<NServiceBus.Logging.DefaultFactory>().Level(NServiceBus.Logging.LogLevel.Warn);
 
             try
             {
@@ -30,6 +31,22 @@ namespace RavenToSqlPersistence
             }
         }
 
+        private static void InitNLog()
+        {
+            var config = new NLog.Config.LoggingConfiguration();
+
+            // Targets where to log to: File and Console
+            var logfile = new NLog.Targets.FileTarget("logfile") { FileName = "file.txt" };
+            var logconsole = new NLog.Targets.ConsoleTarget("logconsole");
+
+            // Rules for mapping loggers to targets            
+            config.AddRule(LogLevel.Info, LogLevel.Fatal, logconsole);
+            config.AddRule(LogLevel.Debug, LogLevel.Fatal, logfile);
+
+            // Apply config           
+            NLog.LogManager.Configuration = config;
+        }
+
         static async Task RunAsync()
         {
             CheckConfiguration();
@@ -37,8 +54,8 @@ namespace RavenToSqlPersistence
             var docStore = Configuration.ConfigureRavenDb();
             docStore.Initialize();
 
-            await SubscriptionConverter.ConvertSubscriptions(docStore);
-            await TimeoutConverter.ConvertTimeouts(docStore);
+            //await SubscriptionConverter.ConvertSubscriptions(docStore);
+            //await TimeoutConverter.ConvertTimeouts(docStore);
             await SagaConverter.ConvertSagas(docStore);
 
             await EndpointProxy.StopAll();
